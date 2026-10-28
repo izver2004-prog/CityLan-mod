@@ -105,6 +105,18 @@ jobs:
       - name: Сборка
         run: gradle build --no-daemon -p "$ROOT"
 
+      - name: Справка по API (только если сборка упала)
+        if: failure()
+        run: |
+          for j in $(find ~/.gradle -name '*.jar' 2>/dev/null); do
+            L=$(unzip -l "$j" 2>/dev/null || true)
+            for name in MultiplayerScope 'client/KeyMapping' 'platform/InputConstants'; do
+              C=$(echo "$L" | grep -o "[A-Za-z0-9_/$]*${name}[A-Za-z0-9_$]*\.class" | head -3 | sed 's/\.class$//; s#/#.#g')
+              for c in $C; do echo "=== $c"; javap -p -cp "$j" "$c" 2>/dev/null | head -60 || true; done
+            done
+          done
+          true
+
       - name: Собрать jar в папку out
         run: |
           mkdir -p out
